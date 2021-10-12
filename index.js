@@ -66,11 +66,13 @@ var ytdl_core_1 = __importDefault(require("ytdl-core"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 var yts = require("yt-search");
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-var token = require('./auth.json').token;
-var Client = new discord_js_1.default.Client({ intents: ['GUILD_VOICE_STATES', 'GUILD_MESSAGES', 'GUILDS'] });
-Client.on('ready', function () { var _a; return console.log("Ready, logged in as " + ((_a = Client.user) === null || _a === void 0 ? void 0 : _a.tag)); });
+var token = require("./auth.json").token;
+var Client = new discord_js_1.default.Client({
+    intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"],
+});
+Client.on("ready", function () { var _a; return console.log("Ready, logged in as " + ((_a = Client.user) === null || _a === void 0 ? void 0 : _a.tag)); });
 // This contains the setup code for creating slash commands in a guild. The owner of the bot can send "!deploy" to create them.
-Client.on('messageCreate', function (message) { return __awaiter(void 0, void 0, void 0, function () {
+Client.on("messageCreate", function (message) { return __awaiter(void 0, void 0, void 0, function () {
     var _a, _b, _c, _d;
     return __generator(this, function (_e) {
         switch (_e.label) {
@@ -83,44 +85,57 @@ Client.on('messageCreate', function (message) { return __awaiter(void 0, void 0,
                 _e.sent();
                 _e.label = 2;
             case 2:
-                if (!(message.content.toLowerCase() === '!deploy' && message.author.id === ((_d = (_c = Client.application) === null || _c === void 0 ? void 0 : _c.owner) === null || _d === void 0 ? void 0 : _d.id))) return [3 /*break*/, 5];
+                if (!(message.content.toLowerCase() === "!deploy" &&
+                    message.author.id === ((_d = (_c = Client.application) === null || _c === void 0 ? void 0 : _c.owner) === null || _d === void 0 ? void 0 : _d.id))) return [3 /*break*/, 5];
                 return [4 /*yield*/, message.guild.commands.set([
                         {
-                            name: 'play',
-                            description: 'Plays a song',
+                            name: "play",
+                            description: "Plays a song",
                             options: [
                                 {
-                                    name: 'song',
-                                    type: 'STRING',
-                                    description: 'The URL or the name of the song to play',
+                                    name: "song",
+                                    type: "STRING",
+                                    description: "The URL or the name of the song to play",
                                     required: true,
                                 },
                             ],
                         },
                         {
-                            name: 'skip',
-                            description: 'Skip to the next song in the queue',
+                            name: "download",
+                            description: "Gets an MP3 of a song",
+                            options: [
+                                {
+                                    name: "song",
+                                    type: "STRING",
+                                    description: "The URL or the name of the song to get",
+                                    required: true,
+                                },
+                            ],
                         },
                         {
-                            name: 'queue',
-                            description: 'See the music queue',
+                            name: "skip",
+                            description: "Skip to the next song in the queue",
                         },
                         {
-                            name: 'pause',
-                            description: 'Pauses the song that is currently playing',
+                            name: "queue",
+                            description: "See the music queue",
                         },
                         {
-                            name: 'resume',
-                            description: 'Resume playback of the current song',
+                            name: "pause",
+                            description: "Pauses the song that is currently playing",
                         },
                         {
-                            name: 'stop',
-                            description: 'Leave the voice channel',
+                            name: "resume",
+                            description: "Resume playback of the current song",
+                        },
+                        {
+                            name: "stop",
+                            description: "Leave the voice channel",
                         },
                     ])];
             case 3:
                 _e.sent();
-                return [4 /*yield*/, message.reply('Deployed!')];
+                return [4 /*yield*/, message.reply("Deployed!")];
             case 4:
                 _e.sent();
                 _e.label = 5;
@@ -133,37 +148,36 @@ Client.on('messageCreate', function (message) { return __awaiter(void 0, void 0,
  */
 var subscriptions = new Map();
 // Handles slash command interactions
-Client.on('interactionCreate', function (interaction) { return __awaiter(void 0, void 0, void 0, function () {
-    var subscription, url, channel, error_1, o, r, track, error_2, current, queue;
+Client.on("interactionCreate", function (interaction) { return __awaiter(void 0, void 0, void 0, function () {
+    var subscription, url, channel, error_1, r, trackData_1, track, error_2, current, queue, url, r, trackData, attatch;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 if (!interaction.isCommand() || !interaction.guildId)
                     return [2 /*return*/];
                 subscription = subscriptions.get(interaction.guildId);
-                if (!(interaction.commandName === 'play')) return [3 /*break*/, 16];
-                return [4 /*yield*/, interaction.deferReply()
-                    // Extract the video URL from the command
-                ];
+                if (!(interaction.commandName === "play")) return [3 /*break*/, 17];
+                return [4 /*yield*/, interaction.deferReply()];
             case 1:
                 _a.sent();
-                url = interaction.options.get('song').value;
+                url = interaction.options.get("song").value;
                 // If a connection to the guild doesn't already exist and the user is in a voice channel, join that channel
                 // and create a subscription.
                 if (!subscription) {
-                    if (interaction.member instanceof discord_js_1.GuildMember && interaction.member.voice.channel) {
+                    if (interaction.member instanceof discord_js_1.GuildMember &&
+                        interaction.member.voice.channel) {
                         channel = interaction.member.voice.channel;
                         subscription = new subscription_1.MusicSubscription((0, voice_1.joinVoiceChannel)({
                             channelId: channel.id,
                             guildId: channel.guild.id,
-                            adapterCreator: channel.guild.voiceAdapterCreator
+                            adapterCreator: channel.guild.voiceAdapterCreator,
                         }));
-                        subscription.voiceConnection.on('error', console.warn);
+                        subscription.voiceConnection.on("error", console.warn);
                         subscriptions.set(interaction.guildId, subscription);
                     }
                 }
                 if (!!subscription) return [3 /*break*/, 3];
-                return [4 /*yield*/, interaction.followUp('Join a voice channel and then try that again!')];
+                return [4 /*yield*/, interaction.followUp("Join a voice channel and then try that again!")];
             case 2:
                 _a.sent();
                 return [2 /*return*/];
@@ -176,131 +190,174 @@ Client.on('interactionCreate', function (interaction) { return __awaiter(void 0,
             case 5:
                 error_1 = _a.sent();
                 console.warn(error_1);
-                return [4 /*yield*/, interaction.followUp('Failed to join voice channel within 20 seconds, please try again later!')];
+                return [4 /*yield*/, interaction.followUp("Failed to join voice channel within 20 seconds, please try again later!")];
             case 6:
                 _a.sent();
                 return [2 /*return*/];
             case 7:
-                _a.trys.push([7, 13, , 15]);
-                o = "";
-                if (!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 8];
-                o = url;
-                return [3 /*break*/, 10];
-            case 8: return [4 /*yield*/, yts(url)];
-            case 9:
+                _a.trys.push([7, 14, , 16]);
+                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 9];
+                return [4 /*yield*/, yts(url)];
+            case 8:
                 r = _a.sent();
-                o = r.videos[0].url;
-                _a.label = 10;
-            case 10: return [4 /*yield*/, track_1.Track.from(o, {
-                    onStart: function () {
-                        interaction.followUp({ content: 'Now playing!', ephemeral: true }).catch(console.warn);
-                    },
-                    onFinish: function () {
-                        interaction.followUp({ content: 'Now finished!', ephemeral: true }).catch(console.warn);
-                    },
-                    onError: function (error) {
-                        console.warn(error);
-                        interaction.followUp({ content: "Error: " + error.message, ephemeral: true }).catch(console.warn);
-                    },
-                })];
+                url = r.videos[0].url;
+                _a.label = 9;
+            case 9: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
+            case 10: return [4 /*yield*/, (_a.sent()).videoDetails];
             case 11:
+                trackData_1 = _a.sent();
+                return [4 /*yield*/, track_1.Track.from(url, {
+                        onStart: function () {
+                            var _a, _b, _c, _d, _e, _f, _g, _h;
+                            interaction
+                                .followUp({
+                                embeds: [
+                                    new discord_js_1.default.MessageEmbed()
+                                        .setTitle("Now Playing!")
+                                        .addField(trackData_1.title, ((_b = (_a = trackData_1.description) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 1024
+                                        ? ((_c = trackData_1.description) === null || _c === void 0 ? void 0 : _c.slice(0, 1021)) + "..."
+                                        : (_d = trackData_1.description) !== null && _d !== void 0 ? _d : "No Description")
+                                        .setDescription(trackData_1.viewCount + " views | " + trackData_1.author.name + " | " + trackData_1.publishDate)
+                                        .setImage(trackData_1.thumbnails[0].url)
+                                        .setThumbnail(trackData_1.author.thumbnails
+                                        ? trackData_1.author.thumbnails[0].url
+                                        : (_g = (_e = interaction.user.avatarURL()) !== null && _e !== void 0 ? _e : (_f = Client.user) === null || _f === void 0 ? void 0 : _f.avatarURL()) !== null && _g !== void 0 ? _g : "")
+                                        .setColor((_h = interaction.user.hexAccentColor) !== null && _h !== void 0 ? _h : "#000000"),
+                                ],
+                            })
+                                .catch(console.warn);
+                        },
+                        onFinish: function () {
+                            interaction
+                                .followUp({ content: "Now finished!" })
+                                .catch(console.warn);
+                        },
+                        onError: function (error) {
+                            console.warn(error);
+                            interaction
+                                .followUp({ content: "Error: " + error.message })
+                                .catch(console.warn);
+                        },
+                    })];
+            case 12:
                 track = _a.sent();
                 // Enqueue the track and reply a success message to the user
                 subscription.enqueue(track);
-                return [4 /*yield*/, interaction.followUp("Queued **" + track.title + "**")];
-            case 12:
-                _a.sent();
-                return [3 /*break*/, 15];
+                return [4 /*yield*/, interaction.followUp("Queued **" + track.title + "** | " + track.length)];
             case 13:
+                _a.sent();
+                return [3 /*break*/, 16];
+            case 14:
                 error_2 = _a.sent();
                 console.warn(error_2);
-                return [4 /*yield*/, interaction.reply('Failed to play track, please try again later!')];
-            case 14:
+                return [4 /*yield*/, interaction.reply("Failed to play track, please try again later!")];
+            case 15:
                 _a.sent();
-                return [3 /*break*/, 15];
-            case 15: return [3 /*break*/, 43];
-            case 16:
-                if (!(interaction.commandName === 'skip')) return [3 /*break*/, 21];
-                if (!subscription) return [3 /*break*/, 18];
+                return [3 /*break*/, 16];
+            case 16: return [3 /*break*/, 50];
+            case 17:
+                if (!(interaction.commandName === "skip")) return [3 /*break*/, 22];
+                if (!subscription) return [3 /*break*/, 19];
                 // Calling .stop() on an AudioPlayer causes it to transition into the Idle state. Because of a state transition
                 // listener defined in music/subscription.ts, transitions into the Idle state mean the next track from the queue
                 // will be loaded and played.
                 subscription.audioPlayer.stop();
-                return [4 /*yield*/, interaction.reply('Skipped song!')];
-            case 17:
+                return [4 /*yield*/, interaction.reply("Skipped song!")];
+            case 18:
                 _a.sent();
-                return [3 /*break*/, 20];
-            case 18: return [4 /*yield*/, interaction.reply('Not playing in this server!')];
-            case 19:
+                return [3 /*break*/, 21];
+            case 19: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 20:
                 _a.sent();
-                _a.label = 20;
-            case 20: return [3 /*break*/, 43];
-            case 21:
-                if (!(interaction.commandName === 'queue')) return [3 /*break*/, 26];
-                if (!subscription) return [3 /*break*/, 23];
+                _a.label = 21;
+            case 21: return [3 /*break*/, 50];
+            case 22:
+                if (!(interaction.commandName === "queue")) return [3 /*break*/, 27];
+                if (!subscription) return [3 /*break*/, 24];
                 current = subscription.audioPlayer.state.status === voice_1.AudioPlayerStatus.Idle
                     ? "Nothing is currently playing!"
-                    : "Playing **" + subscription.audioPlayer.state.resource.metadata.title + "**";
+                    : "Playing **" + subscription.audioPlayer.state.resource
+                        .metadata.title + "** | " + subscription.audioPlayer.state.resource
+                        .metadata.length;
                 queue = subscription.queue
                     .slice(0, 5)
-                    .map(function (track, index) { return index + 1 + ") " + track.title; })
-                    .join('\n');
+                    .map(function (track, index) { return index + 1 + " | " + track.title + " | " + track.length; })
+                    .join("\n");
                 return [4 /*yield*/, interaction.reply(current + "\n\n" + queue)];
-            case 22:
+            case 23:
                 _a.sent();
-                return [3 /*break*/, 25];
-            case 23: return [4 /*yield*/, interaction.reply('Not playing in this server!')];
-            case 24:
+                return [3 /*break*/, 26];
+            case 24: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 25:
                 _a.sent();
-                _a.label = 25;
-            case 25: return [3 /*break*/, 43];
-            case 26:
-                if (!(interaction.commandName === 'pause')) return [3 /*break*/, 31];
-                if (!subscription) return [3 /*break*/, 28];
-                subscription.audioPlayer.pause();
-                return [4 /*yield*/, interaction.reply({ content: "Paused!", ephemeral: true })];
+                _a.label = 26;
+            case 26: return [3 /*break*/, 50];
             case 27:
+                if (!(interaction.commandName === "pause")) return [3 /*break*/, 32];
+                if (!subscription) return [3 /*break*/, 29];
+                subscription.audioPlayer.pause();
+                return [4 /*yield*/, interaction.reply({ content: "Paused!" })];
+            case 28:
                 _a.sent();
-                return [3 /*break*/, 30];
-            case 28: return [4 /*yield*/, interaction.reply('Not playing in this server!')];
-            case 29:
+                return [3 /*break*/, 31];
+            case 29: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 30:
                 _a.sent();
-                _a.label = 30;
-            case 30: return [3 /*break*/, 43];
-            case 31:
-                if (!(interaction.commandName === 'resume')) return [3 /*break*/, 36];
-                if (!subscription) return [3 /*break*/, 33];
-                subscription.audioPlayer.unpause();
-                return [4 /*yield*/, interaction.reply({ content: "Unpaused!", ephemeral: true })];
+                _a.label = 31;
+            case 31: return [3 /*break*/, 50];
             case 32:
+                if (!(interaction.commandName === "resume")) return [3 /*break*/, 37];
+                if (!subscription) return [3 /*break*/, 34];
+                subscription.audioPlayer.unpause();
+                return [4 /*yield*/, interaction.reply({ content: "Unpaused!" })];
+            case 33:
                 _a.sent();
-                return [3 /*break*/, 35];
-            case 33: return [4 /*yield*/, interaction.reply('Not playing in this server!')];
-            case 34:
+                return [3 /*break*/, 36];
+            case 34: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 35:
                 _a.sent();
-                _a.label = 35;
-            case 35: return [3 /*break*/, 43];
-            case 36:
-                if (!(interaction.commandName === 'leave')) return [3 /*break*/, 41];
-                if (!subscription) return [3 /*break*/, 38];
+                _a.label = 36;
+            case 36: return [3 /*break*/, 50];
+            case 37:
+                if (!(interaction.commandName === "stop")) return [3 /*break*/, 42];
+                if (!subscription) return [3 /*break*/, 39];
                 subscription.voiceConnection.destroy();
                 subscriptions.delete(interaction.guildId);
-                return [4 /*yield*/, interaction.reply({ content: "Left channel!", ephemeral: true })];
-            case 37:
+                return [4 /*yield*/, interaction.reply({ content: "Left channel!" })];
+            case 38:
                 _a.sent();
-                return [3 /*break*/, 40];
-            case 38: return [4 /*yield*/, interaction.reply('Not playing in this server!')];
-            case 39:
+                return [3 /*break*/, 41];
+            case 39: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 40:
                 _a.sent();
-                _a.label = 40;
-            case 40: return [3 /*break*/, 43];
-            case 41: return [4 /*yield*/, interaction.reply('Unknown command')];
+                _a.label = 41;
+            case 41: return [3 /*break*/, 50];
             case 42:
+                if (!(interaction.commandName === "download")) return [3 /*break*/, 48];
+                return [4 /*yield*/, interaction.deferReply()];
+            case 43:
                 _a.sent();
-                _a.label = 43;
-            case 43: return [2 /*return*/];
+                url = interaction.options.get("song").value;
+                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 45];
+                return [4 /*yield*/, yts(url)];
+            case 44:
+                r = _a.sent();
+                url = r.videos[0].url;
+                _a.label = 45;
+            case 45: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
+            case 46: return [4 /*yield*/, _a.sent()];
+            case 47:
+                trackData = _a.sent();
+                attatch = new discord_js_1.default.MessageAttachment((0, ytdl_core_1.default)(url, { filter: "audioonly" }), trackData.videoDetails.title + ".mp3");
+                interaction.followUp({ files: [attatch] });
+                return [3 /*break*/, 50];
+            case 48: return [4 /*yield*/, interaction.reply("Unknown command")];
+            case 49:
+                _a.sent();
+                _a.label = 50;
+            case 50: return [2 /*return*/];
         }
     });
 }); });
-Client.on('error', console.warn);
+Client.on("error", console.warn);
 void Client.login(token);

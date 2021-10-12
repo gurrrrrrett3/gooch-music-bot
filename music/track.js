@@ -64,9 +64,10 @@ var noop = function () { };
  */
 var Track = /** @class */ (function () {
     function Track(_a) {
-        var url = _a.url, title = _a.title, onStart = _a.onStart, onFinish = _a.onFinish, onError = _a.onError;
+        var url = _a.url, title = _a.title, length = _a.length, onStart = _a.onStart, onFinish = _a.onFinish, onError = _a.onError;
         this.url = url;
         this.title = title;
+        this.length = length;
         this.onStart = onStart;
         this.onFinish = onFinish;
         this.onError = onError;
@@ -78,13 +79,13 @@ var Track = /** @class */ (function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
             var process = (0, youtube_dl_exec_1.raw)(_this.url, {
-                o: '-',
-                q: '',
-                f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
-                r: '100K',
-            }, { stdio: ['ignore', 'pipe', 'ignore'] });
+                o: "-",
+                q: "",
+                f: "bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio",
+                r: "100K",
+            }, { stdio: ["ignore", "pipe", "ignore"] });
             if (!process.stdout) {
-                reject(new Error('No stdout'));
+                reject(new Error("No stdout"));
                 return;
             }
             var stream = process.stdout;
@@ -95,9 +96,14 @@ var Track = /** @class */ (function () {
                 reject(error);
             };
             process
-                .once('spawn', function () {
+                .once("spawn", function () {
                 (0, voice_1.demuxProbe)(stream)
-                    .then(function (probe) { return resolve((0, voice_1.createAudioResource)(probe.stream, { metadata: _this, inputType: probe.type })); })
+                    .then(function (probe) {
+                    return resolve((0, voice_1.createAudioResource)(probe.stream, {
+                        metadata: _this,
+                        inputType: probe.type,
+                    }));
+                })
                     .catch(onError);
             })
                 .catch(onError);
@@ -132,7 +138,7 @@ var Track = /** @class */ (function () {
                                 methods.onError(error);
                             },
                         };
-                        return [2 /*return*/, new Track(__assign({ title: info.videoDetails.title, url: url }, wrappedMethods))];
+                        return [2 /*return*/, new Track(__assign({ title: info.videoDetails.title, length: formatTime(info.videoDetails.lengthSeconds), url: url }, wrappedMethods))];
                 }
             });
         });
@@ -140,3 +146,14 @@ var Track = /** @class */ (function () {
     return Track;
 }());
 exports.Track = Track;
+function formatTime(time) {
+    time = parseInt(time.toString());
+    var h = Math.floor(time / 3600);
+    time = time % 3600;
+    var m = Math.floor(time / 60);
+    time = time % 60;
+    return h > 0 ? p(h) + ":" + p(m) + ":" + p(time) : m > 0 ? p(m) + ":" + p(time) : "" + p(time);
+}
+function p(s) {
+    return s.toString().length == 1 ? "0" + s : s;
+}
