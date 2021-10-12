@@ -65,8 +65,9 @@ var subscription_1 = require("./music/subscription");
 var ytdl_core_1 = __importDefault(require("ytdl-core"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 var yts = require("yt-search");
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-var token = require("./auth.json").token;
+var dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
+var token = process.env.TOKEN;
 var Client = new discord_js_1.default.Client({
     intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"],
 });
@@ -150,8 +151,9 @@ var subscriptions = new Map();
 // Handles slash command interactions
 Client.on("interactionCreate", function (interaction) { return __awaiter(void 0, void 0, void 0, function () {
     var subscription, url, channel, error_1, r, trackData_1, track, error_2, current, queue, url, r, trackData, attatch;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
+    var _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 if (!interaction.isCommand() || !interaction.guildId)
                     return [2 /*return*/];
@@ -159,7 +161,7 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 if (!(interaction.commandName === "play")) return [3 /*break*/, 17];
                 return [4 /*yield*/, interaction.deferReply()];
             case 1:
-                _a.sent();
+                _b.sent();
                 url = interaction.options.get("song").value;
                 // If a connection to the guild doesn't already exist and the user is in a voice channel, join that channel
                 // and create a subscription.
@@ -179,33 +181,33 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 if (!!subscription) return [3 /*break*/, 3];
                 return [4 /*yield*/, interaction.followUp("Join a voice channel and then try that again!")];
             case 2:
-                _a.sent();
+                _b.sent();
                 return [2 /*return*/];
             case 3:
-                _a.trys.push([3, 5, , 7]);
+                _b.trys.push([3, 5, , 7]);
                 return [4 /*yield*/, (0, voice_1.entersState)(subscription.voiceConnection, voice_1.VoiceConnectionStatus.Ready, 20e3)];
             case 4:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 7];
             case 5:
-                error_1 = _a.sent();
+                error_1 = _b.sent();
                 console.warn(error_1);
                 return [4 /*yield*/, interaction.followUp("Failed to join voice channel within 20 seconds, please try again later!")];
             case 6:
-                _a.sent();
+                _b.sent();
                 return [2 /*return*/];
             case 7:
-                _a.trys.push([7, 14, , 16]);
+                _b.trys.push([7, 14, , 16]);
                 if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 9];
                 return [4 /*yield*/, yts(url)];
             case 8:
-                r = _a.sent();
+                r = _b.sent();
                 url = r.videos[0].url;
-                _a.label = 9;
+                _b.label = 9;
             case 9: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
-            case 10: return [4 /*yield*/, (_a.sent()).videoDetails];
+            case 10: return [4 /*yield*/, (_b.sent()).videoDetails];
             case 11:
-                trackData_1 = _a.sent();
+                trackData_1 = _b.sent();
                 return [4 /*yield*/, track_1.Track.from(url, {
                         onStart: function () {
                             var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -240,19 +242,19 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                         },
                     })];
             case 12:
-                track = _a.sent();
+                track = _b.sent();
                 // Enqueue the track and reply a success message to the user
                 subscription.enqueue(track);
                 return [4 /*yield*/, interaction.followUp("Queued **" + track.title + "** | " + track.length)];
             case 13:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 16];
             case 14:
-                error_2 = _a.sent();
+                error_2 = _b.sent();
                 console.warn(error_2);
                 return [4 /*yield*/, interaction.reply("Failed to play track, please try again later!")];
             case 15:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 16];
             case 16: return [3 /*break*/, 50];
             case 17:
@@ -264,12 +266,12 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 subscription.audioPlayer.stop();
                 return [4 /*yield*/, interaction.reply("Skipped song!")];
             case 18:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 21];
             case 19: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 20:
-                _a.sent();
-                _a.label = 21;
+                _b.sent();
+                _b.label = 21;
             case 21: return [3 /*break*/, 50];
             case 22:
                 if (!(interaction.commandName === "queue")) return [3 /*break*/, 27];
@@ -285,12 +287,12 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                     .join("\n");
                 return [4 /*yield*/, interaction.reply(current + "\n\n" + queue)];
             case 23:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 26];
             case 24: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 25:
-                _a.sent();
-                _a.label = 26;
+                _b.sent();
+                _b.label = 26;
             case 26: return [3 /*break*/, 50];
             case 27:
                 if (!(interaction.commandName === "pause")) return [3 /*break*/, 32];
@@ -298,12 +300,12 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 subscription.audioPlayer.pause();
                 return [4 /*yield*/, interaction.reply({ content: "Paused!" })];
             case 28:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 31];
             case 29: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 30:
-                _a.sent();
-                _a.label = 31;
+                _b.sent();
+                _b.label = 31;
             case 31: return [3 /*break*/, 50];
             case 32:
                 if (!(interaction.commandName === "resume")) return [3 /*break*/, 37];
@@ -311,12 +313,12 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 subscription.audioPlayer.unpause();
                 return [4 /*yield*/, interaction.reply({ content: "Unpaused!" })];
             case 33:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 36];
             case 34: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 35:
-                _a.sent();
-                _a.label = 36;
+                _b.sent();
+                _b.label = 36;
             case 36: return [3 /*break*/, 50];
             case 37:
                 if (!(interaction.commandName === "stop")) return [3 /*break*/, 42];
@@ -325,36 +327,38 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 subscriptions.delete(interaction.guildId);
                 return [4 /*yield*/, interaction.reply({ content: "Left channel!" })];
             case 38:
-                _a.sent();
+                _b.sent();
                 return [3 /*break*/, 41];
             case 39: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 40:
-                _a.sent();
-                _a.label = 41;
+                _b.sent();
+                _b.label = 41;
             case 41: return [3 /*break*/, 50];
             case 42:
                 if (!(interaction.commandName === "download")) return [3 /*break*/, 48];
                 return [4 /*yield*/, interaction.deferReply()];
             case 43:
-                _a.sent();
+                _b.sent();
                 url = interaction.options.get("song").value;
                 if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 45];
                 return [4 /*yield*/, yts(url)];
             case 44:
-                r = _a.sent();
+                r = _b.sent();
                 url = r.videos[0].url;
-                _a.label = 45;
-            case 45: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
-            case 46: return [4 /*yield*/, _a.sent()];
+                _b.label = 45;
+            case 45:
+                interaction.followUp({ content: "Downloading..." });
+                return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
+            case 46: return [4 /*yield*/, _b.sent()];
             case 47:
-                trackData = _a.sent();
+                trackData = _b.sent();
                 attatch = new discord_js_1.default.MessageAttachment((0, ytdl_core_1.default)(url, { filter: "audioonly" }), trackData.videoDetails.title + ".mp3");
-                interaction.followUp({ files: [attatch] });
+                (_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({ files: [attatch] });
                 return [3 /*break*/, 50];
             case 48: return [4 /*yield*/, interaction.reply("Unknown command")];
             case 49:
-                _a.sent();
-                _a.label = 50;
+                _b.sent();
+                _b.label = 50;
             case 50: return [2 /*return*/];
         }
     });

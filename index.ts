@@ -18,8 +18,9 @@ import ytdl from "ytdl-core";
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 const yts = require("yt-search");
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
-const { token } = require("./auth.json");
+import dotenv from "dotenv";
+dotenv.config()
+const token = process.env.TOKEN
 
 const Client = new Discord.Client({
   intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"],
