@@ -65,6 +65,8 @@ var subscription_1 = require("./music/subscription");
 var ytdl_core_1 = __importDefault(require("ytdl-core"));
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 var yts = require("yt-search");
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+var _a = require("spotify-url-info"), getData = _a.getData, getPreview = _a.getPreview, getTracks = _a.getTracks;
 var dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 var token = process.env.TOKEN;
@@ -150,18 +152,18 @@ Client.on("messageCreate", function (message) { return __awaiter(void 0, void 0,
 var subscriptions = new Map();
 // Handles slash command interactions
 Client.on("interactionCreate", function (interaction) { return __awaiter(void 0, void 0, void 0, function () {
-    var subscription, url, channel, error_1, r, trackData_1, track, error_2, current, queue, url, r, trackData, attatch;
-    var _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
+    var subscription, url, channel, error_1, urls, data, r, link, pdata, r, error_2, current, queue, url, r, trackData, attatch;
+    var _a, _b, _c;
+    return __generator(this, function (_d) {
+        switch (_d.label) {
             case 0:
                 if (!interaction.isCommand() || !interaction.guildId)
                     return [2 /*return*/];
                 subscription = subscriptions.get(interaction.guildId);
-                if (!(interaction.commandName === "play")) return [3 /*break*/, 17];
-                return [4 /*yield*/, interaction.deferReply()];
+                if (!(interaction.commandName === "play")) return [3 /*break*/, 20];
+                return [4 /*yield*/, interaction.deleteReply()];
             case 1:
-                _b.sent();
+                _d.sent();
                 url = interaction.options.get("song").value;
                 // If a connection to the guild doesn't already exist and the user is in a voice channel, join that channel
                 // and create a subscription.
@@ -172,6 +174,7 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                         subscription = new subscription_1.MusicSubscription((0, voice_1.joinVoiceChannel)({
                             channelId: channel.id,
                             guildId: channel.guild.id,
+                            //@ts-expect-error
                             adapterCreator: channel.guild.voiceAdapterCreator,
                         }));
                         subscription.voiceConnection.on("error", console.warn);
@@ -181,187 +184,266 @@ Client.on("interactionCreate", function (interaction) { return __awaiter(void 0,
                 if (!!subscription) return [3 /*break*/, 3];
                 return [4 /*yield*/, interaction.followUp("Join a voice channel and then try that again!")];
             case 2:
-                _b.sent();
+                _d.sent();
                 return [2 /*return*/];
             case 3:
-                _b.trys.push([3, 5, , 7]);
+                _d.trys.push([3, 5, , 7]);
                 return [4 /*yield*/, (0, voice_1.entersState)(subscription.voiceConnection, voice_1.VoiceConnectionStatus.Ready, 20e3)];
             case 4:
-                _b.sent();
+                _d.sent();
                 return [3 /*break*/, 7];
             case 5:
-                error_1 = _b.sent();
+                error_1 = _d.sent();
                 console.warn(error_1);
                 return [4 /*yield*/, interaction.followUp("Failed to join voice channel within 20 seconds, please try again later!")];
             case 6:
-                _b.sent();
+                _d.sent();
                 return [2 /*return*/];
             case 7:
-                _b.trys.push([7, 14, , 16]);
-                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 9];
-                return [4 /*yield*/, yts(url)];
+                _d.trys.push([7, 17, , 19]);
+                urls = [];
+                if (!url.includes("open.spotify.com")) return [3 /*break*/, 14];
+                return [4 /*yield*/, getPreview(url)];
             case 8:
-                r = _b.sent();
+                data = _d.sent();
+                if (!(data.type == "track")) return [3 /*break*/, 10];
+                return [4 /*yield*/, yts(data.title + " " + data.artist)];
+            case 9:
+                r = _d.sent();
                 url = r.videos[0].url;
-                _b.label = 9;
-            case 9: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
-            case 10: return [4 /*yield*/, (_b.sent()).videoDetails];
+                return [3 /*break*/, 13];
+            case 10:
+                link = data.link;
+                return [4 /*yield*/, getTracks(link)];
             case 11:
-                trackData_1 = _b.sent();
-                return [4 /*yield*/, track_1.Track.from(url, {
-                        onStart: function () {
-                            var _a, _b, _c, _d, _e, _f, _g, _h;
-                            interaction
-                                .followUp({
-                                embeds: [
-                                    new discord_js_1.default.MessageEmbed()
-                                        .setTitle("Now Playing!")
-                                        .addField(trackData_1.title, ((_b = (_a = trackData_1.description) === null || _a === void 0 ? void 0 : _a.length) !== null && _b !== void 0 ? _b : 0) > 1024
-                                        ? ((_c = trackData_1.description) === null || _c === void 0 ? void 0 : _c.slice(0, 1021)) + "..."
-                                        : (_d = trackData_1.description) !== null && _d !== void 0 ? _d : "No Description")
-                                        .setDescription(trackData_1.viewCount + " views | " + trackData_1.author.name + " | " + trackData_1.publishDate)
-                                        .setImage(trackData_1.thumbnails[0].url)
-                                        .setThumbnail(trackData_1.author.thumbnails
-                                        ? trackData_1.author.thumbnails[0].url
-                                        : (_g = (_e = interaction.user.avatarURL()) !== null && _e !== void 0 ? _e : (_f = Client.user) === null || _f === void 0 ? void 0 : _f.avatarURL()) !== null && _g !== void 0 ? _g : "")
-                                        .setColor((_h = interaction.user.hexAccentColor) !== null && _h !== void 0 ? _h : "#000000"),
-                                ],
-                            })
-                                .catch(console.warn);
-                        },
-                        onFinish: function () {
-                            interaction
-                                .followUp({ content: "Now finished!" })
-                                .catch(console.warn);
-                        },
-                        onError: function (error) {
-                            console.warn(error);
-                            interaction
-                                .followUp({ content: "Error: " + error.message })
-                                .catch(console.warn);
-                        },
-                    })];
+                pdata = _d.sent();
+                console.log(pdata[0]);
+                pdata.forEach(function (element) { return __awaiter(void 0, void 0, void 0, function () {
+                    var r, u;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                console.log(element.name + " " + element.artists[0].name);
+                                return [4 /*yield*/, yts(element.name + " " + element.artists[0].name)];
+                            case 1:
+                                r = _a.sent();
+                                u = r.videos[0].url;
+                                urls.push(u);
+                                console.log(u);
+                                return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [4 /*yield*/, ((_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({
+                        content: "Queued " + urls.length + " tracks",
+                    }))];
             case 12:
-                track = _b.sent();
-                // Enqueue the track and reply a success message to the user
-                subscription.enqueue(track);
-                return [4 /*yield*/, interaction.followUp("Queued **" + track.title + "** | " + track.length)];
-            case 13:
-                _b.sent();
-                return [3 /*break*/, 16];
+                _d.sent();
+                _d.label = 13;
+            case 13: return [3 /*break*/, 16];
             case 14:
-                error_2 = _b.sent();
-                console.warn(error_2);
-                return [4 /*yield*/, interaction.reply("Failed to play track, please try again later!")];
+                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 16];
+                return [4 /*yield*/, yts(url)];
             case 15:
-                _b.sent();
-                return [3 /*break*/, 16];
-            case 16: return [3 /*break*/, 50];
+                r = _d.sent();
+                url = r.videos[0].url;
+                _d.label = 16;
+            case 16:
+                console.log(urls);
+                urls.forEach(function (element) { return __awaiter(void 0, void 0, void 0, function () {
+                    var track;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, createTrack(element, interaction)];
+                            case 1:
+                                track = _a.sent();
+                                subscription === null || subscription === void 0 ? void 0 : subscription.enqueue(track);
+                                return [2 /*return*/];
+                        }
+                    });
+                }); });
+                return [3 /*break*/, 19];
             case 17:
-                if (!(interaction.commandName === "skip")) return [3 /*break*/, 22];
-                if (!subscription) return [3 /*break*/, 19];
+                error_2 = _d.sent();
+                console.warn(error_2);
+                return [4 /*yield*/, ((_b = interaction.channel) === null || _b === void 0 ? void 0 : _b.send("Failed to play track, please try again later!"))];
+            case 18:
+                _d.sent();
+                return [3 /*break*/, 19];
+            case 19: return [3 /*break*/, 53];
+            case 20:
+                if (!(interaction.commandName === "skip")) return [3 /*break*/, 25];
+                if (!subscription) return [3 /*break*/, 22];
                 // Calling .stop() on an AudioPlayer causes it to transition into the Idle state. Because of a state transition
                 // listener defined in music/subscription.ts, transitions into the Idle state mean the next track from the queue
                 // will be loaded and played.
                 subscription.audioPlayer.stop();
                 return [4 /*yield*/, interaction.reply("Skipped song!")];
-            case 18:
-                _b.sent();
-                return [3 /*break*/, 21];
-            case 19: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
-            case 20:
-                _b.sent();
-                _b.label = 21;
-            case 21: return [3 /*break*/, 50];
-            case 22:
-                if (!(interaction.commandName === "queue")) return [3 /*break*/, 27];
-                if (!subscription) return [3 /*break*/, 24];
+            case 21:
+                _d.sent();
+                return [3 /*break*/, 24];
+            case 22: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 23:
+                _d.sent();
+                _d.label = 24;
+            case 24: return [3 /*break*/, 53];
+            case 25:
+                if (!(interaction.commandName === "queue")) return [3 /*break*/, 30];
+                if (!subscription) return [3 /*break*/, 27];
                 current = subscription.audioPlayer.state.status === voice_1.AudioPlayerStatus.Idle
                     ? "Nothing is currently playing!"
                     : "Playing **" + subscription.audioPlayer.state.resource
                         .metadata.title + "** | " + subscription.audioPlayer.state.resource
                         .metadata.length;
                 queue = subscription.queue
-                    .slice(0, 5)
+                    .slice(0, 10)
                     .map(function (track, index) { return index + 1 + " | " + track.title + " | " + track.length; })
                     .join("\n");
-                return [4 /*yield*/, interaction.reply(current + "\n\n" + queue)];
-            case 23:
-                _b.sent();
-                return [3 /*break*/, 26];
-            case 24: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
-            case 25:
-                _b.sent();
-                _b.label = 26;
-            case 26: return [3 /*break*/, 50];
-            case 27:
-                if (!(interaction.commandName === "pause")) return [3 /*break*/, 32];
-                if (!subscription) return [3 /*break*/, 29];
+                return [4 /*yield*/, interaction.reply(current + "\n\n```yaml\n" + queue + "```")];
+            case 26:
+                _d.sent();
+                return [3 /*break*/, 29];
+            case 27: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 28:
+                _d.sent();
+                _d.label = 29;
+            case 29: return [3 /*break*/, 53];
+            case 30:
+                if (!(interaction.commandName === "pause")) return [3 /*break*/, 35];
+                if (!subscription) return [3 /*break*/, 32];
                 subscription.audioPlayer.pause();
                 return [4 /*yield*/, interaction.reply({ content: "Paused!" })];
-            case 28:
-                _b.sent();
-                return [3 /*break*/, 31];
-            case 29: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
-            case 30:
-                _b.sent();
-                _b.label = 31;
-            case 31: return [3 /*break*/, 50];
-            case 32:
-                if (!(interaction.commandName === "resume")) return [3 /*break*/, 37];
-                if (!subscription) return [3 /*break*/, 34];
+            case 31:
+                _d.sent();
+                return [3 /*break*/, 34];
+            case 32: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 33:
+                _d.sent();
+                _d.label = 34;
+            case 34: return [3 /*break*/, 53];
+            case 35:
+                if (!(interaction.commandName === "resume")) return [3 /*break*/, 40];
+                if (!subscription) return [3 /*break*/, 37];
                 subscription.audioPlayer.unpause();
                 return [4 /*yield*/, interaction.reply({ content: "Unpaused!" })];
-            case 33:
-                _b.sent();
-                return [3 /*break*/, 36];
-            case 34: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
-            case 35:
-                _b.sent();
-                _b.label = 36;
-            case 36: return [3 /*break*/, 50];
-            case 37:
-                if (!(interaction.commandName === "stop")) return [3 /*break*/, 42];
-                if (!subscription) return [3 /*break*/, 39];
+            case 36:
+                _d.sent();
+                return [3 /*break*/, 39];
+            case 37: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
+            case 38:
+                _d.sent();
+                _d.label = 39;
+            case 39: return [3 /*break*/, 53];
+            case 40:
+                if (!(interaction.commandName === "stop")) return [3 /*break*/, 45];
+                if (!subscription) return [3 /*break*/, 42];
                 subscription.voiceConnection.destroy();
                 subscriptions.delete(interaction.guildId);
                 return [4 /*yield*/, interaction.reply({ content: "Left channel!" })];
-            case 38:
-                _b.sent();
-                return [3 /*break*/, 41];
-            case 39: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
-            case 40:
-                _b.sent();
-                _b.label = 41;
-            case 41: return [3 /*break*/, 50];
-            case 42:
-                if (!(interaction.commandName === "download")) return [3 /*break*/, 48];
-                return [4 /*yield*/, interaction.deferReply()];
+            case 41:
+                _d.sent();
+                return [3 /*break*/, 44];
+            case 42: return [4 /*yield*/, interaction.reply("Not playing in this server!")];
             case 43:
-                _b.sent();
-                url = interaction.options.get("song").value;
-                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 45];
-                return [4 /*yield*/, yts(url)];
-            case 44:
-                r = _b.sent();
-                url = r.videos[0].url;
-                _b.label = 45;
+                _d.sent();
+                _d.label = 44;
+            case 44: return [3 /*break*/, 53];
             case 45:
+                if (!(interaction.commandName === "download")) return [3 /*break*/, 51];
+                return [4 /*yield*/, interaction.deferReply()];
+            case 46:
+                _d.sent();
+                url = interaction.options.get("song").value;
+                if (!!ytdl_core_1.default.validateURL(url)) return [3 /*break*/, 48];
+                return [4 /*yield*/, yts(url)];
+            case 47:
+                r = _d.sent();
+                url = r.videos[0].url;
+                _d.label = 48;
+            case 48:
                 interaction.followUp({ content: "Downloading..." });
                 return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
-            case 46: return [4 /*yield*/, _b.sent()];
-            case 47:
-                trackData = _b.sent();
+            case 49: return [4 /*yield*/, _d.sent()];
+            case 50:
+                trackData = _d.sent();
                 attatch = new discord_js_1.default.MessageAttachment((0, ytdl_core_1.default)(url, { filter: "audioonly" }), trackData.videoDetails.title + ".mp3");
-                (_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({ files: [attatch] });
-                return [3 /*break*/, 50];
-            case 48: return [4 /*yield*/, interaction.reply("Unknown command")];
-            case 49:
-                _b.sent();
-                _b.label = 50;
-            case 50: return [2 /*return*/];
+                (_c = interaction.channel) === null || _c === void 0 ? void 0 : _c.send({ files: [attatch] });
+                return [3 /*break*/, 53];
+            case 51: return [4 /*yield*/, interaction.reply("Unknown command")];
+            case 52:
+                _d.sent();
+                _d.label = 53;
+            case 53: return [2 /*return*/];
         }
     });
 }); });
 Client.on("error", console.warn);
 void Client.login(token);
+function playSong(url, interaction, subscription) {
+    return __awaiter(this, void 0, void 0, function () {
+        var track;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, createTrack(url, interaction)];
+                case 1:
+                    track = _a.sent();
+                    // Enqueue the track and reply a success message to the user
+                    subscription.enqueue(track);
+                    return [4 /*yield*/, interaction.followUp("Queued **" + track.title + "** | " + track.length)];
+                case 2:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+/**
+ *
+ * @param url url of song
+ * @param interaction discord interaction
+ * @returns new track
+ */
+function createTrack(url, interaction) {
+    return __awaiter(this, void 0, void 0, function () {
+        var trackData, track;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, ytdl_core_1.default.getBasicInfo(url)];
+                case 1:
+                    trackData = (_a.sent()).videoDetails;
+                    return [4 /*yield*/, track_1.Track.from(url, {
+                            onStart: function () {
+                                var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                                (_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({
+                                    embeds: [
+                                        new discord_js_1.default.MessageEmbed()
+                                            .setTitle("Now Playing!")
+                                            .addField(trackData.title, ((_c = (_b = trackData.description) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0) > 1024
+                                            ? ((_d = trackData.description) === null || _d === void 0 ? void 0 : _d.slice(0, 1021)) + "..."
+                                            : (_e = trackData.description) !== null && _e !== void 0 ? _e : "No Description")
+                                            .setDescription(trackData.viewCount + " views | " + trackData.author.name + " | " + trackData.publishDate)
+                                            .setImage(trackData.thumbnails[0].url)
+                                            .setThumbnail(trackData.author.thumbnails
+                                            ? trackData.author.thumbnails[0].url
+                                            : (_h = (_f = interaction.user.avatarURL()) !== null && _f !== void 0 ? _f : (_g = Client.user) === null || _g === void 0 ? void 0 : _g.avatarURL()) !== null && _h !== void 0 ? _h : "")
+                                            .setColor((_j = interaction.user.hexAccentColor) !== null && _j !== void 0 ? _j : "#000000"),
+                                    ],
+                                }).catch(console.warn);
+                            },
+                            onFinish: function () {
+                                var _a;
+                                (_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({ content: "Now finished!" }).catch(console.warn);
+                            },
+                            onError: function (error) {
+                                var _a;
+                                console.warn(error);
+                                (_a = interaction.channel) === null || _a === void 0 ? void 0 : _a.send({ content: "Error: " + error.message }).catch(console.warn);
+                            },
+                        })];
+                case 2:
+                    track = _a.sent();
+                    return [2 /*return*/, track];
+            }
+        });
+    });
+}

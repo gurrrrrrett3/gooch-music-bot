@@ -17,10 +17,12 @@ import ytdl from "ytdl-core";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 const yts = require("yt-search");
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+const { getData, getPreview, getTracks } = require("spotify-url-info");
 
 import dotenv from "dotenv";
-dotenv.config()
-const token = process.env.TOKEN
+dotenv.config();
+const token = process.env.TOKEN;
 
 const Client = new Discord.Client({
   intents: ["GUILD_VOICE_STATES", "GUILD_MESSAGES", "GUILDS"],
@@ -101,7 +103,7 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
   let subscription = subscriptions.get(interaction.guildId);
 
   if (interaction.commandName === "play") {
-    await interaction.deferReply();
+    await interaction.deleteReply();
     // Extract the video URL from the command
     var url = interaction.options.get("song")!.value! as string;
 
@@ -117,6 +119,7 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
           joinVoiceChannel({
             channelId: channel.id,
             guildId: channel.guild.id,
+            //@ts-expect-error
             adapterCreator: channel.guild.voiceAdapterCreator,
           })
         );
@@ -152,60 +155,71 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
       // Attempt to create a Track from the user's video URL
       // if the video isn't a URL
 
-      if (!ytdl.validateURL(url)) {
+      var urls:string[] = [];
+
+      if (url.includes("open.spotify.com")) {
+        const data: {
+          type: "track" | "playlist";
+          title: string;
+          artist: string;
+          image: string;
+          audio: string;
+          link: string;
+          embed: string;
+          date: string;
+          description: string;
+        } = await getPreview(url);
+
+        if (data.type == "track") {
+          const r = await yts(`${data.title} ${data.artist}`);
+          url = r.videos[0].url;
+        } else {
+          //data.type == "playlist"
+
+          const link = data.link;
+
+          const pdata: [
+            {
+              artists: [{ name: string }];
+              duration_ms: number;
+              explicit: boolean;
+              href: string;
+              name: string;
+            }
+          ] = await getTracks(link);
+
+          console.log(pdata[0])
+
+          pdata.forEach(async (element) => {
+            console.log(`${element.name} ${element.artists[0].name}`)
+            const r = await yts(`${element.name} ${element.artists[0].name}`);
+            const u = r.videos[0].url;
+            urls.push(u);
+            console.log(u);
+          });
+          await interaction.channel?.send({
+            content: `Queued ${urls.length} tracks`,
+          });
+        }
+      } else if (!ytdl.validateURL(url)) {
         const r = await yts(url);
         url = r.videos[0].url;
       }
 
-      const trackData = await (await ytdl.getBasicInfo(url)).videoDetails;
 
-      const track = await Track.from(url, {
-        onStart() {
-          interaction
-            .followUp({
-              embeds: [
-                new Discord.MessageEmbed()
-                  .setTitle("Now Playing!")
-                  .addField(
-                    trackData.title,
-                    (trackData.description?.length ?? 0) > 1024
-                      ? trackData.description?.slice(0, 1021) + "..."
-                      : trackData.description ?? "No Description"
-                  )
-                  .setDescription(
-                    `${trackData.viewCount} views | ${trackData.author.name} | ${trackData.publishDate}`
-                  )
-                  .setImage(trackData.thumbnails[0].url)
-                  .setThumbnail(
-                    trackData.author.thumbnails
-                      ? trackData.author.thumbnails[0].url
-                      : interaction.user.avatarURL() ??
-                          Client.user?.avatarURL() ??
-                          ""
-                  )
-                  .setColor(interaction.user.hexAccentColor ?? "#000000"),
-              ],
-            })
-            .catch(console.warn);
-        },
-        onFinish() {
-          interaction
-            .followUp({ content: "Now finished!" })
-            .catch(console.warn);
-        },
-        onError(error) {
-          console.warn(error);
-          interaction
-            .followUp({ content: `Error: ${error.message}` })
-            .catch(console.warn);
-        },
+      console.log(urls);
+
+      urls.forEach(async (element) => {
+        const track = await createTrack(element, interaction);
+        subscription?.enqueue(track);
       });
-      // Enqueue the track and reply a success message to the user
-      subscription.enqueue(track);
-      await interaction.followUp(`Queued **${track.title}** | ${track.length}`);
+
+      //await playSong(url, interaction, subscription)
     } catch (error) {
       console.warn(error);
-      await interaction.reply("Failed to play track, please try again later!");
+      await interaction.channel?.send(
+        "Failed to play track, please try again later!"
+      );
     }
   } else if (interaction.commandName === "skip") {
     if (subscription) {
@@ -232,13 +246,13 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
             }`;
 
       const queue = subscription.queue
-        .slice(0, 5)
+        .slice(0, 10)
         .map(
           (track, index) => `${index + 1} | ${track.title} | ${track.length}`
         )
         .join("\n");
 
-      await interaction.reply(`${current}\n\n${queue}`);
+      await interaction.reply(`${current}\n\n\`\`\`yaml\n${queue}\`\`\``);
     } else {
       await interaction.reply("Not playing in this server!");
     }
@@ -274,11 +288,13 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
       url = r.videos[0].url;
     }
 
-	interaction.followUp({content: "Downloading..."})
+    interaction.followUp({ content: "Downloading..." });
     const trackData = await await ytdl.getBasicInfo(url);
-	const attatch = new Discord.MessageAttachment(ytdl(url, {filter: "audioonly"}), `${trackData.videoDetails.title}.mp3`)
-	interaction.channel?.send({files: [attatch]})
-	
+    const attatch = new Discord.MessageAttachment(
+      ytdl(url, { filter: "audioonly" }),
+      `${trackData.videoDetails.title}.mp3`
+    );
+    interaction.channel?.send({ files: [attatch] });
   } else {
     await interaction.reply("Unknown command");
   }
@@ -287,3 +303,72 @@ Client.on("interactionCreate", async (interaction: Interaction) => {
 Client.on("error", console.warn);
 
 void Client.login(token);
+
+async function playSong(
+  url: string,
+  interaction: Discord.CommandInteraction,
+  subscription: MusicSubscription
+) {
+  const track = await createTrack(url, interaction);
+
+  // Enqueue the track and reply a success message to the user
+  subscription.enqueue(track);
+  await interaction.followUp(`Queued **${track.title}** | ${track.length}`);
+}
+
+/**
+ *
+ * @param url url of song
+ * @param interaction discord interaction
+ * @returns new track
+ */
+async function createTrack(
+  url: string,
+  interaction: Discord.CommandInteraction
+) {
+  const trackData = (await ytdl.getBasicInfo(url)).videoDetails;
+
+  const track = await Track.from(url, {
+    onStart() {
+      interaction.channel
+        ?.send({
+          embeds: [
+            new Discord.MessageEmbed()
+              .setTitle("Now Playing!")
+              .addField(
+                trackData.title,
+                (trackData.description?.length ?? 0) > 1024
+                  ? trackData.description?.slice(0, 1021) + "..."
+                  : trackData.description ?? "No Description"
+              )
+              .setDescription(
+                `${trackData.viewCount} views | ${trackData.author.name} | ${trackData.publishDate}`
+              )
+              .setImage(trackData.thumbnails[0].url)
+              .setThumbnail(
+                trackData.author.thumbnails
+                  ? trackData.author.thumbnails[0].url
+                  : interaction.user.avatarURL() ??
+                      Client.user?.avatarURL() ??
+                      ""
+              )
+              .setColor(interaction.user.hexAccentColor ?? "#000000"),
+          ],
+        })
+        .catch(console.warn);
+    },
+    onFinish() {
+      interaction.channel
+        ?.send({ content: "Now finished!" })
+        .catch(console.warn);
+    },
+    onError(error) {
+      console.warn(error);
+      interaction.channel
+        ?.send({ content: `Error: ${error.message}` })
+        .catch(console.warn);
+    },
+  });
+
+  return track;
+}
