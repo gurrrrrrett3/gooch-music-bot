@@ -6,20 +6,18 @@ import {
 } from "@discordjs/voice";
 import { raw as ytdl } from "youtube-dl-exec";
 
+const yts = require("yt-search")
+
 /**
  * This is the data required to create a Track object
  */
 export interface TrackData {
   url: string;
-  title: string;
-  length: string;
-  onStart: () => void;
-  onFinish: () => void;
-  onError: (error: Error) => void;
+  searchTerm: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const noop = () => {};
+const noop = () => { };
 
 /**
  * A Track represents information about a YouTube video (in this context) that can be added to a queue.
@@ -31,34 +29,28 @@ const noop = () => {};
  * queue, it is converted into an AudioResource just in time for playback.
  */
 export class Track implements TrackData {
-  public readonly url: string;
-  public readonly title: string;
-  public readonly length: string;
-  public readonly onStart: () => void;
-  public readonly onFinish: () => void;
-  public readonly onError: (error: Error) => void;
+  public url: string;
+  public searchTerm: string;
+  public trackData: any
 
   private constructor({
     url,
-    title,
-    length,
-    onStart,
-    onFinish,
-    onError,
+    searchTerm
   }: TrackData) {
     this.url = url;
-    this.title = title;
-    this.length = length;
-    this.onStart = onStart;
-    this.onFinish = onFinish;
-    this.onError = onError;
+    this.searchTerm = searchTerm;
+    this.trackData = undefined;
   }
 
   /**
    * Creates an AudioResource from this Track.
    */
-  public createAudioResource(): Promise<AudioResource<Track>> {
-    return new Promise((resolve, reject) => {
+  public async createAudioResource(): Promise<AudioResource<Track>> {
+    return new Promise(async (resolve, reject) => {
+      if (!this.url) {
+        const r = await yts(this.searchTerm)
+        this.url = r.videos[0].url;
+      }
       const process = ytdl(
         this.url,
         {
@@ -104,33 +96,10 @@ export class Track implements TrackData {
    * @returns The created Track
    */
   public static async from(
-    url: string,
-    methods: Pick<Track, "onStart" | "onFinish" | "onError">
+    url: string
   ): Promise<Track> {
     const info = await getInfo(url);
-
-    // The methods are wrapped so that we can ensure that they are only called once.
-    const wrappedMethods = {
-      onStart() {
-        wrappedMethods.onStart = noop;
-        methods.onStart();
-      },
-      onFinish() {
-        wrappedMethods.onFinish = noop;
-        methods.onFinish();
-      },
-      onError(error: Error) {
-        wrappedMethods.onError = noop;
-        methods.onError(error);
-      },
-    };
-
-    return new Track({
-      title: info.videoDetails.title,
-      length: formatTime(info.videoDetails.lengthSeconds),
-      url,
-      ...wrappedMethods,
-    });
+    return new Track({url, searchTerm = ""})
   }
 }
 
@@ -147,4 +116,3 @@ function formatTime(time: string | number) {
 
 function p(s: number) {
   return s.toString().length == 1 ? `0${s}` : s;
-}

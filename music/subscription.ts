@@ -20,7 +20,7 @@ const wait = promisify(setTimeout);
 export class MusicSubscription {
 	public readonly voiceConnection: VoiceConnection;
 	public readonly audioPlayer: AudioPlayer;
-	public queue: Track[];
+	public queue: string[];
 	public queueLock = false;
 	public readyLock = false;
 
@@ -106,7 +106,7 @@ export class MusicSubscription {
 	 *
 	 * @param track The track to add to the queue
 	 */
-	public enqueue(track: Track) {
+	public enqueue(track: string) {
 		this.queue.push(track);
 		void this.processQueue();
 	}
